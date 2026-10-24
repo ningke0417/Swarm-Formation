@@ -120,6 +120,7 @@ bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
 
 bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_pt, bool use_esdf_check)
 {
+    gridPath_.clear();
     ros::Time time_1 = ros::Time::now();
     ++rounds_;
     
@@ -264,14 +265,16 @@ vector<Vector3d> AStar::getPath()
 
 vector<Vector3d> AStar::astarSearchAndGetSimplePath(const double step_size, Vector3d start_pt, Vector3d end_pt){
     // call astar search and get the path
-    AstarSearch(step_size, start_pt, end_pt, true);
+    if (!AstarSearch(step_size, start_pt, end_pt, true))
+        return {};
     vector<Vector3d> path = getPath();
     bool is_show_debug = false;
 
     // I don't know why, but only try A* again
     if ((path[0]-start_pt).norm() > 0.5){
         ROS_WARN("I don't know why, but only try A* again");
-        AstarSearch(step_size, start_pt, end_pt, false);
+        if (!AstarSearch(step_size, start_pt, end_pt, false))
+            return {};
         path = getPath();
     }
     

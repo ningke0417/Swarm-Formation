@@ -71,7 +71,93 @@ Finally, you can see a normal hexagon formation navigating in random forest map.
 </p>
 
 If you find this work useful or interesting, please kindly give us a star :star:, thanks!:grinning:
-### 2.1 Quick Start with Docker
+
+### 2.1 Eight-UAV sparse random-obstacle test
+
+The workspace also provides a reproducible 32 m x 14 m sparse obstacle course
+for an eight-UAV, two-row by four-column formation:
+
+```bash
+catkin_make -j1
+source devel/setup.bash
+roslaunch ego_planner rectangle_8uav_sparse_random.launch
+```
+
+The launch file starts RViz, the obstacle generator, and all eight simulated
+UAVs. The vehicles automatically fly along +x from the formation center
+`(-14, 0, 1.5)` to `(14, 0, 1.5)`; no RViz goal click is required. The map,
+start/goal geometry and slot IDs match the eight-UAV scenario in
+`EGO-Planner-criterion-validation`.
+
+The environment is deterministic by default. Change the seed or obstacle
+counts from the command line to create another reproducible test case:
+
+```bash
+roslaunch ego_planner rectangle_8uav_sparse_random.launch \
+  random_seed:=17 small_position_seed:=23
+```
+
+`random_seed` selects the original complete layout. `small_position_seed`
+defaults to `-1`, preserving that layout; a nonnegative value relocates only
+the random small obstacles, preserving their sizes, the large obstacles and
+the structured obstacles. It uses the same placement algorithm as
+`EGO-Planner-criterion-validation`. Use both seeds and the same geometry
+arguments in each project when comparing runs.
+
+Useful launch arguments include `map_size_x`, `map_size_y`, `start_x`,
+`goal_x`, `flight_height`, `max_vel`, `random_seed`, `small_position_seed`,
+`large_obstacle_count`, and `small_obstacle_count`. Keep the start and goal
+clearance regions free when increasing obstacle density. The former
+`start_center_y`/`goal_center_y` arguments are replaced by `start_x`/`goal_x`.
+
+### 2.2 Eight-UAV fixed split/merge-wall test
+
+The fixed-wall comparison scene uses the same map generator and default wall
+parameters as the corresponding EGO-Planner criterion-validation experiment:
+
+```bash
+catkin_make -j1
+source devel/setup.bash
+roslaunch ego_planner rectangle_8uav_fixed_split_merge_wall.launch
+```
+
+All eight UAVs start automatically in a 2 x 4 formation centered at
+`(-6, 0, 1.5)`, with a preset goal centered at `(10, 0, 1.5)`. They fly along
++x toward a solid wall followed by a wall with a central opening. No RViz
+goal click is required. Wall positions, dimensions, the opening width and
+`flight_height` can be overridden with launch arguments.
+
+Both scenes use `rectangle_2x4_x_axis.yaml`: UAVs 0--3 occupy the front row
+at relative x = +0.5 m and UAVs 4--7 the rear row at x = -0.5 m. Each row's
+y offsets are -1.5, -0.5, +0.5, +1.5 m, matching criterion-validation's
+nominal slot IDs. The optimizer uses the same ID ordering. The older
+`rectangle_2x4.yaml` remains available for +y experiments.
+
+RViz opens an overview fixed to `world`, with +x running from left to right.
+Restart the launch after changing its configuration to reload the view and
+the planner parameters. The fixed-wall launch shows one solid wall and one
+wall with an opening; scattered boxes belong to the random-obstacle launch.
+
+Both eight-UAV comparison scenes default to `full_360_sensing:=true` and
+`max_acc:=6.0`, matching criterion-validation's current horizontal sensing
+coverage and planner/optimizer acceleration limits. The CPU point-cloud
+renderer uses the same range and vertical filtering as the reference; the
+range remains 5 m. These arguments can be overridden at launch time.
+
+Before reporting a controlled comparison, also align the physical
+collision/clearance criteria. Keep algorithm-specific formation weights and split/merge or
+assignment policies explicit rather than treating equal numeric weights
+as equivalent. Criterion-validation enables initial assignment by default;
+its random-obstacle launch also enables swapping by default, while this
+project uses fixed ID-to-slot assignments. Define a common arrival condition
+and record collisions, minimum clearance, formation error, flight time and
+path length over the same set of seeds, including unsuccessful runs.
+
+The point-cloud distance-field edge regression can be run with
+`catkin_make -j1 cloud_esdf_test` followed by
+`rostest plan_env cloud_esdf.test`.
+
+### 2.3 Quick Start with Docker
 If your operating system doesn't support ROS noetic, docker is a great alternative.
 
 First of all, you have to build the project and create an image like so:
@@ -134,3 +220,9 @@ We are still working on extending the proposed system and improving code reliabi
 For any technical issues, please contact Lun Quan (lunquan@zju.edu.cn) or Fei Gao (fgaoaa@zju.edu.cn).
 
 For commercial inquiries, please contact Fei Gao (fgaoaa@zju.edu.cn).
+cd /home/robot/Codes/Swarm-Formation
+source /opt/ros/noetic/setup.zsh
+source devel/setup.zsh
+roslaunch ego_planner rectangle_8uav_fixed_split_merge_wall.launch
+
+roslaunch ego_planner rectangle_8uav_sparse_random.launch

@@ -65,7 +65,9 @@ namespace ego_planner
     enum FORMATION_TYPE
     {
       NONE_FORMATION        = 0,
-      REGULAR_HEXAGON       = 1
+      REGULAR_HEXAGON       = 1,
+      RECTANGLE_2X4         = 2,
+      RECTANGLE_2X4_X_AXIS  = 3
     };
 
     /* optimization parameters */
@@ -82,6 +84,9 @@ namespace ego_planner
     
     int    formation_type_;
     int    formation_size_;
+    int    astar_pool_size_x_;
+    int    astar_pool_size_y_;
+    int    astar_pool_size_z_;
     bool   use_formation_ = true;
     bool   is_other_assigning_ = false;
 
@@ -112,7 +117,7 @@ namespace ego_planner
                             const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
                             Eigen::MatrixXd &optimal_points, const bool use_formation);
                                             
-    void astarWithMinTraj( const Eigen::MatrixXd &iniState, 
+    bool astarWithMinTraj( const Eigen::MatrixXd &iniState,
                            const Eigen::MatrixXd &finState,
                            std::vector<Eigen::Vector3d> &simple_path,
                            Eigen::MatrixXd &ctl_points,
@@ -220,6 +225,43 @@ namespace ego_planner
 
           formation_size_ = swarm_des.size();
           // construct the desired swarm graph
+          swarm_graph_->setDesiredForm(swarm_des);
+          break;
+        }
+
+        case FORMATION_TYPE::RECTANGLE_2X4 :
+        {
+          // The longitudinal course follows +y: four columns lie along x and
+          // the two rows lie along y. These are the original desired points
+          // rotated counter-clockwise by 90 degrees.
+          swarm_des.emplace_back( 1.5, -0.5, 0.0);
+          swarm_des.emplace_back( 0.5, -0.5, 0.0);
+          swarm_des.emplace_back(-0.5, -0.5, 0.0);
+          swarm_des.emplace_back(-1.5, -0.5, 0.0);
+          swarm_des.emplace_back( 1.5,  0.5, 0.0);
+          swarm_des.emplace_back( 0.5,  0.5, 0.0);
+          swarm_des.emplace_back(-0.5,  0.5, 0.0);
+          swarm_des.emplace_back(-1.5,  0.5, 0.0);
+
+          formation_size_ = swarm_des.size();
+          swarm_graph_->setDesiredForm(swarm_des);
+          break;
+        }
+
+        case FORMATION_TYPE::RECTANGLE_2X4_X_AXIS :
+        {
+          // Match criterion-validation's +x slot IDs: 0..3 are the front
+          // row and 4..7 are the rear row, with 1 m adjacent spacing.
+          swarm_des.emplace_back( 0.5, -1.5, 0.0);
+          swarm_des.emplace_back( 0.5, -0.5, 0.0);
+          swarm_des.emplace_back( 0.5,  0.5, 0.0);
+          swarm_des.emplace_back( 0.5,  1.5, 0.0);
+          swarm_des.emplace_back(-0.5, -1.5, 0.0);
+          swarm_des.emplace_back(-0.5, -0.5, 0.0);
+          swarm_des.emplace_back(-0.5,  0.5, 0.0);
+          swarm_des.emplace_back(-0.5,  1.5, 0.0);
+
+          formation_size_ = swarm_des.size();
           swarm_graph_->setDesiredForm(swarm_des);
           break;
         }

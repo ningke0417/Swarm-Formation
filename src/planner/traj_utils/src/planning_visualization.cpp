@@ -212,6 +212,16 @@ namespace ego_planner
       
       break;
     }
+
+    case FORMATION_TYPE::RECTANGLE_2X4:
+    case FORMATION_TYPE::RECTANGLE_2X4_X_AXIS:
+    {
+      formation_size_ = 8;
+      line_size_ = 10;
+      line_begin_ = {0, 1, 2, 4, 5, 6, 0, 1, 2, 3};
+      line_end_   = {1, 2, 3, 5, 6, 7, 4, 5, 6, 7};
+      break;
+    }
     
     default:
       break;

@@ -72,6 +72,7 @@ namespace ego_planner
      // global goal setting for swarm
     Eigen::Vector3d swarm_central_pos_;
     double swarm_relative_pts_[50][3];
+    int swarm_size_;
     double swarm_scale_;
 
     /* planning data */

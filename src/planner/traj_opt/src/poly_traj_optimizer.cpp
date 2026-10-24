@@ -73,6 +73,11 @@ namespace ego_planner
         this,
         &lbfgs_params);
 
+    // A failed line search restores q, but the callback's cached trajectory
+    // still describes the last trial. Rebuild the state for the returned q.
+    Eigen::VectorXd final_gradient(variable_num_);
+    costFunctionCallback(this, q, final_gradient.data(), variable_num_);
+
     // test collision
     bool occ = false;
     occ = checkCollision();
@@ -90,7 +95,11 @@ namespace ego_planner
     showFormationInformation(false, start_pos);
 
     if (occ)
+    {
+      ROS_WARN_STREAM_THROTTLE(1.0, "Drone " << drone_id_
+          << " rejected optimized trajectory: " << lbfgs::lbfgs_strerror(result));
       return false;
+    }
     else
       return true;
   }
@@ -117,7 +126,14 @@ namespace ego_planner
 
     for (int i=0; i<i_end; i++){
       Eigen::Vector3d pos = traj.getPos(t);
-      if(grid_map_->getInflateOccupancy(pos) == 1){
+      if(grid_map_->getInflateOccupancy(pos) != 0){
+        double interpolated_distance;
+        grid_map_->evaluateEDT(pos, interpolated_distance);
+        ROS_WARN_STREAM_THROTTLE(1.0, "Drone " << drone_id_
+            << " trajectory collision at t=" << t << " position="
+            << pos.transpose() << " distance=" << grid_map_->getDistance(pos)
+            << " interpolated=" << interpolated_distance << " durations="
+            << traj.getDurations().transpose());
         occ = true;
         break;
       }
@@ -620,7 +636,7 @@ namespace ego_planner
     return;
   }
 
-  void PolyTrajOptimizer::astarWithMinTraj(const Eigen::MatrixXd &iniState,
+  bool PolyTrajOptimizer::astarWithMinTraj(const Eigen::MatrixXd &iniState,
                                            const Eigen::MatrixXd &finState,
                                            vector<Eigen::Vector3d> &simple_path,
                                            Eigen::MatrixXd &ctl_points,
@@ -631,6 +647,12 @@ namespace ego_planner
 
     /* astar search and get the simple path*/
     simple_path = a_star_->astarSearchAndGetSimplePath(grid_map_->getResolution(), start_pos, end_pos);
+    if (simple_path.size() < 2)
+      return false;
+
+    // Keep the waypoint and duration arrays consistent for a straight path.
+    if (simple_path.size() == 2)
+      simple_path.insert(simple_path.begin() + 1, (simple_path[0] + simple_path[1]) / 2);
 
     /* generate minimum snap trajectory based on the simple_path waypoints*/
     int piece_num = simple_path.size() - 1;
@@ -672,6 +694,7 @@ namespace ego_planner
     traj = frontendMJ.getTraj();
 
     ctl_points = frontendMJ.getInitConstrainPoints(cps_num_prePiece_);
+    return true;
   }
 
   bool PolyTrajOptimizer::getFormationPos(vector<Eigen::Vector3d> &swarm_graph_pos, Eigen::Vector3d pos)
@@ -749,6 +772,17 @@ namespace ego_planner
     nh.param("optimization/formation_type", formation_type_, -1);
     nh.param("optimization/max_vel", max_vel_, -1.0);
     nh.param("optimization/max_acc", max_acc_, -1.0);
+    nh.param("path_searching/pool_size_x", astar_pool_size_x_, 800);
+    nh.param("path_searching/pool_size_y", astar_pool_size_y_, 200);
+    nh.param("path_searching/pool_size_z", astar_pool_size_z_, 40);
+
+    if (astar_pool_size_x_ < 3 || astar_pool_size_y_ < 3 ||
+        astar_pool_size_z_ < 3)
+    {
+      ROS_FATAL("A* pool dimensions must each be at least 3.");
+      ros::shutdown();
+      return;
+    }
 
     // set the formation type
     swarm_graph_.reset(new SwarmGraph);
@@ -760,7 +794,9 @@ namespace ego_planner
     grid_map_ = map;
 
     a_star_.reset(new AStar);
-    a_star_->initGridMap(grid_map_, Eigen::Vector3i(800, 200, 40));
+    a_star_->initGridMap(
+        grid_map_, Eigen::Vector3i(astar_pool_size_x_, astar_pool_size_y_,
+                                  astar_pool_size_z_));
   }
 
   void PolyTrajOptimizer::setControlPoints(const Eigen::MatrixXd &points)

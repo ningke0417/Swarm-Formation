@@ -1,0 +1,16 @@
+<launch>
+  <test test-name="cloud_esdf" pkg="plan_env" type="cloud_esdf_test" time-limit="20">
+    <param name="grid_map/resolution" value="0.1"/>
+    <param name="grid_map/map_size_x" value="6.0"/>
+    <param name="grid_map/map_size_y" value="6.0"/>
+    <param name="grid_map/map_size_z" value="3.0"/>
+    <param name="grid_map/local_update_range_x" value="2.5"/>
+    <param name="grid_map/local_update_range_y" value="2.5"/>
+    <param name="grid_map/local_update_range_z" value="2.5"/>
+    <param name="grid_map/obstacles_inflation" value="0.1"/>
+    <param name="grid_map/local_bound_inflate" value="1.0"/>
+    <param name="grid_map/ground_height" value="0.0"/>
+    <param name="grid_map/virtual_ceil_height" value="-1.0"/>
+    <param name="grid_map/skip_pixel" value="2"/>
+  </test>
+</launch>

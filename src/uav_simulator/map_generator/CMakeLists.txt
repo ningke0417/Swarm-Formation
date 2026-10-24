@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   geometry_msgs
+  visualization_msgs
   pcl_conversions
 )
 find_package(PCL REQUIRED)
@@ -28,5 +29,15 @@ include_directories(
 
 add_executable (random_forest src/random_forest_sensing.cpp )
 target_link_libraries(random_forest
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES})
+
+add_executable(sparse_random_obstacle_map src/sparse_random_obstacle_map.cpp)
+target_link_libraries(sparse_random_obstacle_map
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES})
+
+add_executable(fixed_split_merge_wall_map src/fixed_split_merge_wall_map.cpp)
+target_link_libraries(fixed_split_merge_wall_map
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES})

@@ -895,6 +895,13 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
   posToIndex(Eigen::Vector3d(max_x, max_y, max_z), md_.local_bound_max_);
   posToIndex(Eigen::Vector3d(min_x, min_y, min_z), md_.local_bound_min_);
 
+  // The distance field must extend beyond the occupied cloud bounds. Without
+  // this halo, interpolation at a wall edge mixes occupied cells with the
+  // uncomputed 10000 m sentinel and hides collisions from the optimizer.
+  const int esdf_inf = ceil(mp_.local_bound_inflate_ / mp_.resolution_);
+  const Eigen::Vector3i esdf_padding(esdf_inf, esdf_inf, 1);
+  md_.local_bound_min_ -= esdf_padding;
+  md_.local_bound_max_ += esdf_padding;
   boundIndex(md_.local_bound_min_);
   boundIndex(md_.local_bound_max_);
 
@@ -1164,9 +1171,6 @@ void GridMap::updateESDF3d (){
           ROS_ERROR("what?");
         }
       }
-
-  md_.tmp_buffer1_.clear();
-  md_.tmp_buffer2_.clear();
 
   for (int x = min_esdf[0]; x <= max_esdf[0]; x++) {
     for (int y = min_esdf[1]; y <= max_esdf[1]; y++) {

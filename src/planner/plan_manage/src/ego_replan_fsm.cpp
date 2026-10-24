@@ -49,7 +49,14 @@ namespace ego_planner
       nh.param("fsm/target" + to_string(i) + "_z", goalpoints_[i][2], -1.0);
     }
 
-    for (int i = 0; i < 7; i++)
+    nh.param("global_goal/swarm_size", swarm_size_, 7);
+    if (swarm_size_ <= 0 || swarm_size_ > 50)
+    {
+      ROS_FATAL("global_goal/swarm_size must be in [1, 50], got %d", swarm_size_);
+      ros::shutdown();
+      return;
+    }
+    for (int i = 0; i < swarm_size_; i++)
     {
       nh.param("global_goal/relative_pos_" + to_string(i) + "/x", swarm_relative_pts_[i][0], -1.0);
       nh.param("global_goal/relative_pos_" + to_string(i) + "/y", swarm_relative_pts_[i][1], -1.0);
@@ -117,7 +124,10 @@ namespace ego_planner
     {
       central_goal = nh.subscribe("/move_base_simple/goal", 1, &EGOReplanFSM::formationWaypointCallback, this);
     }
-    cout << "Wrong target_type_ value! target_type_=" << target_type_ << endl;
+    else
+    {
+      ROS_ERROR("Wrong target_type_ value! target_type_=%d", target_type_);
+    }
   }
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
@@ -311,7 +321,7 @@ namespace ego_planner
       if (t_cur < t_2_3 && t >= t_2_3)
         break;
 
-      if (map->getInflateOccupancy(info->traj.getPos(t)) == 1)
+      if (map->getInflateOccupancy(info->traj.getPos(t)) != 0)
       {
         ROS_WARN("drone %d is too close to the obstacle at relative time %f!",
                  planner_manager_->pp_.drone_id, t / info->duration);
@@ -642,6 +652,11 @@ namespace ego_planner
     swarm_central_pos_(2) = 0.5;
 
     int id = planner_manager_->pp_.drone_id;
+    if (id < 0 || id >= swarm_size_)
+    {
+      ROS_ERROR("Drone id %d is outside configured swarm size %d", id, swarm_size_);
+      return;
+    }
 
     Eigen::Vector3d relative_pos;
     relative_pos << swarm_relative_pts_[id][0],
@@ -750,7 +765,11 @@ namespace ego_planner
 
     for (int i = 0; i < trial_times; i++)
     {
-      if (callReboundReplan(true, false, true))
+      // During sequential startup the complete swarm trajectory set does not
+      // exist yet. Build a collision-free seed trajectory for each UAV first;
+      // formation optimization is enabled by the normal replanning state once
+      // the agents have begun broadcasting their trajectories.
+      if (callReboundReplan(true, false, false))
       {
         return true;
       }
@@ -786,8 +805,10 @@ namespace ego_planner
         local_target_pt_, local_target_vel_);
 
     Eigen::Vector3d desired_start_pt, desired_start_vel, desired_start_acc;
-    double desired_start_time;
-    if (have_local_traj_ && use_formation)
+    double desired_start_time = ros::Time::now().toSec();
+    if (have_local_traj_ && use_formation &&
+        desired_start_time + replan_trajectory_time_ <
+            planner_manager_->traj_.local_traj.start_time + planner_manager_->traj_.local_traj.duration)
     {
       desired_start_time = ros::Time::now().toSec() + replan_trajectory_time_;
       desired_start_pt =

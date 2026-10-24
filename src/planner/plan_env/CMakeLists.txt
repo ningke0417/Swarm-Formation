@@ -47,3 +47,9 @@ target_link_libraries( plan_env
     ${catkin_LIBRARIES} 
     ${PCL_LIBRARIES}
     )  
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  add_rostest_gtest(cloud_esdf_test test/cloud_esdf.test test/cloud_esdf_test.cpp)
+  target_link_libraries(cloud_esdf_test plan_env ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+endif()

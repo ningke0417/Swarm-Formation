@@ -1,6 +1,7 @@
 # rectangle formation yaml
 # global goal setting
 global_goal:
+  swarm_size: 7
   swarm_central_pos: {x: 25.0, y: 0.0, z: 1.0}
   swarm_scale : 2.0
   relative_pos_0 : {x: 0.0, y: 0.0, z: 0.0}

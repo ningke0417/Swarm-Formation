@@ -1,0 +1,114 @@
+<launch>
+  <!-- Match criterion-validation's eight-UAV +x start/goal slots and wall map. -->
+  <arg name="rviz" default="true"/>
+  <arg name="map_source" default="split_merge_wall" doc="split_merge_wall or external"/>
+  <arg name="max_vel" default="0.5"/>
+  <arg name="max_acc" default="6.0"/>
+  <arg name="full_360_sensing" default="true"/>
+  <arg name="map_size_x" default="24.0"/>
+  <arg name="map_size_y" default="14.0"/>
+  <arg name="map_size_z" default="3.0"/>
+  <arg name="flight_type" default="2"/>
+  <arg name="flight_height" default="1.5"/>
+  <arg name="odom_topic" default="visual_slam/odom"/>
+  <arg name="start_x" default="-6.0"/>
+  <arg name="goal_x" default="10.0"/>
+
+  <!-- These defaults exactly match formation_6uav_criterion_auto_split_wall. -->
+  <arg name="first_wall_x" default="-2.0"/>
+  <arg name="wall_y" default="0.0"/>
+  <arg name="first_wall_size_x" default="0.5"/>
+  <arg name="first_wall_size_y" default="4.0"/>
+  <arg name="second_wall_x" default="6.5"/>
+  <arg name="second_wall_size_x" default="0.5"/>
+  <arg name="second_wall_total_size_y" default="10.0"/>
+  <arg name="second_wall_gap_size_y" default="1.8"/>
+  <arg name="safety_distance" default="0.2"/>
+  <arg name="randomize_obstacles" default="false"/>
+  <arg name="random_seed" default="1"/>
+
+  <arg name="formation_config"
+       default="$(find ego_planner)/config/rectangle_2x4_x_axis.yaml"/>
+  <arg name="row0_start_x" default="$(eval float(arg('start_x')) + 0.5)"/>
+  <arg name="row1_start_x" default="$(eval float(arg('start_x')) - 0.5)"/>
+  <arg name="row0_goal_x" default="$(eval float(arg('goal_x')) + 0.5)"/>
+  <arg name="row1_goal_x" default="$(eval float(arg('goal_x')) - 0.5)"/>
+
+  <include file="$(find swarm_bridge)/launch/bridge.launch">
+    <arg name="drone_id" value="999"/>
+    <arg name="broadcast_ip" value="127.0.0.255"/>
+  </include>
+
+  <node if="$(eval arg('map_source') == 'split_merge_wall')"
+        pkg="map_generator" type="fixed_split_merge_wall_map"
+        name="fixed_split_merge_wall_map" output="screen" required="true">
+    <remap from="global_cloud" to="/map_generator/global_cloud"/>
+    <param name="first_wall_x" value="$(arg first_wall_x)" type="double"/>
+    <param name="first_wall_y" value="$(arg wall_y)" type="double"/>
+    <param name="first_wall_size_x" value="$(arg first_wall_size_x)" type="double"/>
+    <param name="first_wall_size_y" value="$(arg first_wall_size_y)" type="double"/>
+    <param name="second_wall_x" value="$(arg second_wall_x)" type="double"/>
+    <param name="second_wall_y" value="$(arg wall_y)" type="double"/>
+    <param name="second_wall_size_x" value="$(arg second_wall_size_x)" type="double"/>
+    <param name="second_wall_total_size_y" value="$(arg second_wall_total_size_y)" type="double"/>
+    <param name="second_wall_gap_size_y" value="$(arg second_wall_gap_size_y)" type="double"/>
+    <param name="safety_distance" value="$(arg safety_distance)" type="double"/>
+    <param name="resolution" value="0.1" type="double"/>
+    <param name="height" value="$(arg map_size_z)" type="double"/>
+    <param name="randomize" value="$(arg randomize_obstacles)" type="bool"/>
+    <param name="random_seed" value="$(arg random_seed)" type="int"/>
+  </node>
+
+  <!-- Front row: drone 0..3; rear row: drone 4..7. Spacing is 1.0 m.
+       Both start and goal formations are centered on y=0. -->
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="0"/><arg name="init_x" value="$(arg row0_start_x)"/><arg name="init_y" value="-1.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row0_goal_x)"/><arg name="target_y" value="-1.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="1"/><arg name="init_x" value="$(arg row0_start_x)"/><arg name="init_y" value="-0.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row0_goal_x)"/><arg name="target_y" value="-0.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="2"/><arg name="init_x" value="$(arg row0_start_x)"/><arg name="init_y" value="0.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row0_goal_x)"/><arg name="target_y" value="0.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="3"/><arg name="init_x" value="$(arg row0_start_x)"/><arg name="init_y" value="1.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row0_goal_x)"/><arg name="target_y" value="1.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="4"/><arg name="init_x" value="$(arg row1_start_x)"/><arg name="init_y" value="-1.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row1_goal_x)"/><arg name="target_y" value="-1.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="5"/><arg name="init_x" value="$(arg row1_start_x)"/><arg name="init_y" value="-0.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row1_goal_x)"/><arg name="target_y" value="-0.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="6"/><arg name="init_x" value="$(arg row1_start_x)"/><arg name="init_y" value="0.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row1_goal_x)"/><arg name="target_y" value="0.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+  <include file="$(find ego_planner)/launch/run_in_sim.launch">
+    <arg name="drone_id" value="7"/><arg name="init_x" value="$(arg row1_start_x)"/><arg name="init_y" value="1.5"/><arg name="init_z" value="$(arg flight_height)"/>
+    <arg name="target_x" value="$(arg row1_goal_x)"/><arg name="target_y" value="1.5"/><arg name="target_z" value="$(arg flight_height)"/>
+    <arg name="map_size_x" value="$(arg map_size_x)"/><arg name="map_size_y" value="$(arg map_size_y)"/><arg name="map_size_z" value="$(arg map_size_z)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/><arg name="formation_config" value="$(arg formation_config)"/><arg name="max_vel" value="$(arg max_vel)"/><arg name="max_acc" value="$(arg max_acc)"/><arg name="full_360_sensing" value="$(arg full_360_sensing)"/><arg name="flight_type" value="$(arg flight_type)"/>
+  </include>
+
+  <include file="$(find ego_planner)/launch/rviz.launch" if="$(arg rviz)"/>
+</launch>

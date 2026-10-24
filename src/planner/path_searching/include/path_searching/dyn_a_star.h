@@ -62,7 +62,10 @@ private:
 	
 	inline bool checkOccupancy(const Eigen::Vector3d &pos) { return (bool)grid_map_->getInflateOccupancy(pos); }
 	inline bool checkOccupancy_esdf(const Eigen::Vector3d &pos){
-		const double dist = 0.2;
+		// Match the optimizer's default obstacle clearance.  The previous
+		// 0.2 m front-end margin let the smoothed trajectory cut back into an
+		// occupied voxel in large-obstacle scenes.
+		const double dist = 0.5;
 		if (grid_map_->getDistance(pos) < dist ) 
 			return true;
 		else

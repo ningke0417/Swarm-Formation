@@ -1,0 +1,34 @@
+# Eight-UAV rectangular formation for a course running along +y.
+# Four columns are along x and two rows are along y.
+global_goal:
+  swarm_size: 8
+  swarm_scale: 1.0
+  relative_pos_0: {x:  1.5, y: -0.5, z: 0.0}
+  relative_pos_1: {x:  0.5, y: -0.5, z: 0.0}
+  relative_pos_2: {x: -0.5, y: -0.5, z: 0.0}
+  relative_pos_3: {x: -1.5, y: -0.5, z: 0.0}
+  relative_pos_4: {x:  1.5, y:  0.5, z: 0.0}
+  relative_pos_5: {x:  0.5, y:  0.5, z: 0.0}
+  relative_pos_6: {x: -0.5, y:  0.5, z: 0.0}
+  relative_pos_7: {x: -1.5, y:  0.5, z: 0.0}
+
+optimization:
+  formation_type: 2
+  weight_obstacle: 50000.0
+  weight_swarm: 50000.0
+  weight_feasibility: 10000.0
+  weight_sqrvariance: 10000.0
+  weight_time: 80.0
+  weight_formation: 15000.0
+  obstacle_clearance: 0.5
+  swarm_clearance: 0.5
+
+fsm:
+  replan_trajectory_time: 0.1
+
+# The upstream project assumes a course running along x (800 x 200 x 40).
+# Swap x/y for this longitudinal course without increasing memory use.
+path_searching:
+  pool_size_x: 200
+  pool_size_y: 800
+  pool_size_z: 40

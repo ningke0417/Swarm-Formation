@@ -43,7 +43,9 @@ namespace ego_planner
     enum FORMATION_TYPE
     {
       NONE_FORMATION        = 0,
-      REGULAR_HEXAGON       = 1
+      REGULAR_HEXAGON       = 1,
+      RECTANGLE_2X4         = 2,
+      RECTANGLE_2X4_X_AXIS  = 3
     };
 
     int drone_id_;
